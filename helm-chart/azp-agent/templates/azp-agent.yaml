@@ -1,7 +1,7 @@
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Chart.Name }}
+  name: {{ .Values.azpAgentName | default "azp-agent" }}
   namespace: {{ .Release.Namespace }}
   labels:
     chart: {{ .Chart.Name }}
@@ -22,20 +22,22 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
-          - name: VSTS_TOKEN
+          - name: AZP_TOKEN
             valueFrom:
               secretKeyRef:
-                name: vsts-agent-secret
-                key: vstsToken
+                name: azp-agent-secret
+                key: azpToken
          {{- with .Values }}
-          - name: VSTS_ACCOUNT
-            value: {{ .vstsAccount }}
-          - name: VSTS_POOL
-            value: {{ .vstsPool | default "kubernetes-vsts-agents" }}
-          - name: VSTS_AGENT
-            value: {{ .vstsAgentName | default "$HOSTNAME" }}
-          - name: VSTS_WORK
-            value: {{ .vstsWorkspace | default "/workspace" }}
+          - name: AZP_URL
+            value: {{ .azpUrl }}
+          - name: AZP_POOL
+            value: {{ .azpPool }}
+          - name: AZP_AGENT_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: AZP_WORK
+            value: {{ .azpWorkspace | default "/workspace" }}
          {{- end }}
          {{- range $key, $value := .Values.extraEnv }}
           - name: {{ $key }}
@@ -43,30 +45,20 @@ spec:
          {{- end }}
         volumeMounts:
           - name: workspace
-            mountPath: {{ .Values.vstsWorkspace | default "/workspace" }}
+            mountPath: {{ .Values.azpWorkspace | default "/workspace" }}
 {{- if .Values.volumeMounts }}
 {{ toYaml .Values.volumeMounts | indent 10 }}
 {{ end }}
-        resources:
-          limits:
-            memory: {{ .Values.resources.limits.memory | quote }}
-            cpu: {{ .Values.resources.limits.cpu | quote }}
-          requests:
-            memory: {{ .Values.resources.requests.memory | quote }}
-            cpu: {{ .Values.resources.requests.cpu | quote }}
      {{- if .Values.cleanRun }}
         livenessProbe:
           exec:
             command:
             - /bin/sh
             - -c
-            - "! ls /vsts/agent/_diag | grep Worker || pgrep Agent.Worker"
+            - "! ls /azp/agent/_diag | grep Worker || pgrep Agent.Worker"
           initialDelaySeconds: 120
           periodSeconds: 5
      {{- end }}
-{{ if .Values.extraContainers }}
-{{ toYaml .Values.extraContainers | indent 6 }}
-{{ end }}
       volumes:
 {{ toYaml .Values.volumes | indent 8 }}
 {{ if .Values.image.imagePullSecret }}

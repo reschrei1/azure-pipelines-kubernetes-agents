@@ -1,110 +1,97 @@
 ## Introduction
 
-[![Build Status](https://dev.azure.com/azure/helm-vsts-agent/_apis/build/status/Azure.helm-vsts-agent?branchName=master)](https://dev.azure.com/azure/helm-vsts-agent/_build/latest?definitionId=12?branchName=master)
-
-This chart bootstraps a [Visual Studio Team Services agent pool](https://github.com/Microsoft/vsts-agent) on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This repo provides a [Helm](https://helm.sh) chart to deploy [Azure Pipelines agents](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/agents) as containers to an [Azure Kubernetes Service](https://azure.microsoft.com/en-us/services/kubernetes-service) (AKS) cluster. A Dockerfile for the Azure Pipelines agent is also provided as well as guidance on how to create the AKS cluster.
 
 ## Prerequisites
- - Kubernetes 1.8+ or newer
+ - [Docker](https://docs.docker.com/install)
+ - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+ - [Helm](https://github.com/helm/helm/releases)
+ - [An Azure DevOps organization](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/create-organization)
+ - [An Azure subscription](https://azure.microsoft.com/en-us/free)
 
-## Configuration
+## Create an Azure DevOps personal access token (PAT)
+Create a personal access token with the **Agent Pools(read, manage)** scope following [these instructions](https://docs.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate). You will have to provide later this token to the `azpToken` value of the helm chart.
 
-The following tables lists the configurable parameters of the `vsts-agent` chart and their default values.
+## Create an Azure Pipelines agent pool
+Create a new agent pool foolowing [these instructions](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/pools-queues?#managing-pools-and-queues). Your azure pipelines agents will join this pool later on.
 
-| Parameter                         | Description                           | Default                                                   |
-| --------------------------------- | ------------------------------------- | --------------------------------------------------------- |
-| `image.repository`                | vsts-agent image                      | `microsoft/vsts-agent`                                    |
-| `image.tag`                       | Specify image tag                     | `latest`                                                  |
-| `image.pullSecrets`               | Specify image pull secrets            | `nil` (does not add image pull secrets to deployed pods)  |
-| `image.pullPolicy`                | Image pull policy                     | `Always`                                                  |
-| `replicas`                        | Number of vsts-agent instaces started | `3`                                                       |
-| `resources.disk`                  | Size of the disk attached to the agent| `50Gi`                                                    |
-| `resources.storageclass`          | Specify storageclass used in kubernetes| `default`                                                    |
-| `vstsAccount`                     | VSTS account name                     | `nil` (must be provided during installation)              |
-| `vstsToken`                       | VSTS personal access token            | `nil` (must be provided during installation)              |
-| `vstsPool`                        | VSTS agent pool name                  | `kubernetes-vsts-agents`                                  |
-| `vstsAgentName`                   | VSTS agent name                       | `$HOSTNAME`                                               |
-| `vstsWorkspace`                   | VSTS agent workspace                  | `/workspace`                                              |
-| `extraEnv`                   | Extra environment variables on the vsts-agent container                  | `nil`                                              |
-| `cleanRun`                   | Kill and restart vsts-agent container on completion of a build (completely resets the environment)                  | `false`                                              |
-| `volumes`                   | An array of custom volumes to attach to the vsts-agent pod                  | `docker-socket` to mount /var/run/docker.sock (if you still need this volume when defining addition ones, please ensure you reference it again in your list)                                             |
-| `volumeMounts`                   | volumeMounts to the vsts-agent container as referenced in `volumes`                  | A read-only `docker-socket` to mount as /var/run/docker.sock in vsts-agent container (as in `volumes` please reference this again if you still need it in your custom list)                                               |
-| `extraContainers`                   | Array of additional sidecar containers to add into the vsts-agent pod                  | `nil`                                              |
+## Customize, build and publish the docker image
+The Dockerfile available at `dockeragent\ubuntu\16.04\` contains the basic tools needed to run the Azure Pipelines agent on Linux (as documented [here](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/docker?#linux)) but feel free to customize it with any aditional tools you might need. Then, you will build and publish the image to Docker Hub (if you don't have a Docker ID you can create one for free [here](https://hub.docker.com)).
 
-## Configure your VSTS instance
+Run the following commands in a command prompt to build and publish your image, replacing `yourdockerid` with your Docker ID:
 
-Before starting the chart installation, you have to configure your VSTS instance as follows:
+```
+docker build -t yourdockerid/azpagent:ubuntu-16.04 ./dockeragent/ubuntu/16.04
+docker login
+docker push yourdockerid/azpagent:ubuntu-16.04
+```
 
-1. Create a personal access token with the authorized scope **Agent Pools(read, manage)**  following these [instructions](https://docs.microsoft.com/en-us/vsts/git/_shared/personal-access-tokens). You will have to provide later the base64 encoded value of this token to the `vstsToken` value of the chart.
+You could also publish your image to a private docker registry like [Azure Container Registry](https://docs.microsoft.com/en-us/azure/container-registry) but you'll need to update the helm chart to pass the appropriate image pull secret.
 
-2. Create a new queue and agent pool with the name `kubernetes-vsts-agents`. You can find more details [here](https://docs.microsoft.com/en-us/vsts/build-release/concepts/agents/pools-queues#creating-agent-pools-and-queues).
+## Create the AKS cluster
+Run the following Azure CLI commands in a command prompt replacing `<Azure subscription name>`, `<resource group name>`, `<resource group location>` and `<cluster name>` with appropriate values for your subscription, resource group, location and kubernetes cluster:
+```
+az login
+az account set --subscription <Azure subscription name>
+az group create --name <resource group name> --location <resource group location>
+az aks create -g <resource group name> -n <cluster name> --generate-ssh-keys
+```
 
-## Installing the Chart
+## Chart parameters
+The following table lists the configurable parameters of the `azp-agent` chart and their default values.
+
+| Parameter                         | Description                            | Default                                                   |
+| --------------------------------- | ---------------------------------------| --------------------------------------------------------- |
+| `image.repository`                | azp-agent image                        | `nil` (must be provided during installation)              |
+| `image.tag`                       | Specify image tag                      | `nil` (must be provided during installation)              |
+| `image.pullSecrets`               | Specify image pull secrets             | `nil` (does not add image pull secrets to deployed pods)  |
+| `image.pullPolicy`                | Image pull policy                      | `Always`                                                  |
+| `replicas`                        | Number of azp-agent instaces started   | `3`                                                       |
+| `resources.disk`                  | Size of the disk attached to the agent | `50Gi`                                                    |
+| `resources.storageclass`          | Specify storageclass used in kubernetes| `managed-premium`                                         |
+| `azpUrl`                          | The URL of the Azure DevOps instance   | `nil` (must be provided during installation)              |
+| `azpToken`                        | Azure DevOps personal access token     | `nil` (must be provided during installation)              |
+| `azpPool`                         | Azure Pipelines agent pool name        | `nil` (must be provided during installation)              |
+| `azpAgentName`                    | Azure Pipelines agent name             | `azp-agent`                                               |
+| `azpWorkspace`                    | Azure Pipelines agent workspace        | `/workspace`                                              |
+| `extraEnv`                        | Extra environment variables on the azp-agent container | `nil`                                     |
+| `cleanRun`                        | Kill and restart azp-agent container on completion of a pipeline run (completely resets the environment)  | `true` |
+| `volumes`                         | An array of custom volumes to attach to the azp-agent pod | `nil`                                  |
+| `volumeMounts`                    | volumeMounts to the azp-agent container as referenced in `volumes` | `nil`                         |
+
+
+## Installing the chart
 
 The chart can be installed with the following command:
 
-```bash
-export VSTS_TOKEN=$(echo -n '<VSTS TOKEN>' | base64)
-
-helm install --namespace <NAMESPACE> --set vstsToken=${VSTS_TOKEN} --set vstsAccount=<VSTS ACCOUNT> --set vstsPool=<VSTS POOL> -f values.yaml vsts-agent .
+```
+helm install --set image.repository=<IMAGE REPO> --set image.tag:<IMAGE TAG> --set azpToken=<AZP TOKEN> --set azpUrl=<AZP URL> --set azpPool=<AZP POOL> -f helm-chart\azp-agent\values.yaml helm-chart\azp-agent azp-agent helm-chart\azp-agent
 ```
 
-Your deployment should look like this if everything works fine:
+Example:
+```
+helm install --set image.repository=julioc/azpagent --set image.tag=ubuntu-16.04 --set azpToken=<TOKEN HERE> --set azpUrl=https://dev.azure.com/julioc --set azpPool=MyPool -f helm-chart\azp-agent\values.yaml azp-agent helm-chart\azp-agent
+```
 
-```bash
-kubectl get pods --namespace <NAMESPACE> 
+It may take some time to stand up the pods but eventually your deployment should look like this:
+
+```
+kubectl get pods
 NAME           READY     STATUS    RESTARTS   AGE
-vsts-agent-0   1/1       Running   0          1m
-vsts-agent-1   1/1       Running   0          1m
-vsts-agent-2   1/1       Running   0          1m
-```
-## Upgrading a deployed Chart
-
-A deployed chart can be upgraded as follows:
-
-```bash
-export VSTS_TOKEN=$(echo -n '<VSTS TOKEN>' | base64)
-
-helm upgrade --timeout 900 --namespace <NAMESPACE> --set vstsToken=${VSTS_TOKEN} --set vstsAccount=<VSTS ACCOUNT> --set vstsPool=<VSTS POOL> -f values.yaml vsts-agent . --wait
+azp-agent-0   1/1       Running   0          1m
+azp-agent-1   1/1       Running   0          1m
+azp-agent-2   1/1       Running   0          1m
 ```
 
-This command will upgrade the exiting chart and wait until the deployment is completed.
+## Scaling up the number of agents
 
-## Uninstalling the Chart
+You can scale up (or down) the number of pipeline agents by running a helm upgrade with the `replicas` parameter:
 
-The chart can be uninstalled/deleted as follows:
-
-```bash
-helm delete --purge vsts-agent
+```
+helm upgrade --install --set image.repository=<IMAGE REPO> --set image.tag:<IMAGE TAG> --set azpToken=<AZP TOKEN> --set azpUrl=<AZP URL> --set azpPool=<AZP POOL> --set replicas=10 -f helm-chart\azp-agent\values.yaml azp-agent helm-chart\azp-agent
 ```
 
-This command removes all the Kubernetes resources associated with the chart and deletes the helm release.
-
-## Validate the Chart
-
-You can validate the chart during development by using the `helm template` command.
-
-```bash
-helm template .
+Example:
 ```
-
-## Scale up the number of VSTS agents
-
-The number of VSTS agents can be easily increased to `10` by using the following command:
-
-```bash
-kubectl scale --namespace <NAMESPACE> statefulset/vsts-agent --replicas 10
+helm upgrade --install --set image.repository=julioc/azpagent --set image.tag=ubuntu-16.04 --set azpToken=<TOKEN HERE> --set azpUrl=https://dev.azure.com/julioc --set azpPool=MyPool --set replicas=10 -f helm-chart\azp-agent\values.yaml azp-agent helm-chart\azp-agent
 ```
-## Contributing
-
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.microsoft.com.
-
-When you submit a pull request, a CLA-bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., label, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
