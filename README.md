@@ -48,7 +48,7 @@ The following table lists the configurable parameters of the `azp-agent` chart a
 | `image.pullPolicy`                | Image pull policy                      | `Always`                                                  |
 | `replicas`                        | Number of azp-agent instaces started   | `3`                                                       |
 | `resources.disk`                  | Size of the disk attached to the agent | `50Gi`                                                    |
-| `resources.storageclass`          | Specify storageclass used in kubernetes| `managed-premium`                                         |
+| `resources.storageclass`          | Specify storageclass used in kubernetes| `default`                                         |
 | `azpUrl`                          | The URL of the Azure DevOps instance   | `nil` (must be provided during installation)              |
 | `azpToken`                        | Azure DevOps personal access token     | `nil` (must be provided during installation)              |
 | `azpPool`                         | Azure Pipelines agent pool name        | `nil` (must be provided during installation)              |
@@ -85,13 +85,14 @@ azp-agent-2   1/1       Running   0          1m
 
 ## Scaling up the number of agents
 
-You can scale up (or down) the number of pipeline agents by running a helm upgrade with the `replicas` parameter:
+You can scale up (or down) the number of pipeline agents by either using `kubectl scale`:
 
 ```
-helm upgrade --install --set image.repository=<IMAGE REPO> --set image.tag:<IMAGE TAG> --set azpToken=<AZP TOKEN> --set azpUrl=<AZP URL> --set azpPool=<AZP POOL> --set replicas=10 -f helm-chart\azp-agent\values.yaml azp-agent helm-chart\azp-agent
+kubectl scale statefulset/azp-agent --replicas 10
 ```
 
-Example:
+Or by running a helm upgrade with the `replicas` parameter:
+
 ```
 helm upgrade --install --set image.repository=julioc/azpagent --set image.tag=ubuntu-16.04 --set azpToken=<TOKEN HERE> --set azpUrl=https://dev.azure.com/julioc --set azpPool=MyPool --set replicas=10 -f helm-chart\azp-agent\values.yaml azp-agent helm-chart\azp-agent
 ```

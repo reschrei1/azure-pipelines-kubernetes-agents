@@ -7,7 +7,6 @@ podName: azp-agent
 
 resources:
   disk: "50Gi"
-  storageclass: "managed-premium"
 
 cleanRun: false
 
