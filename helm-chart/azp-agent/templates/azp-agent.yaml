@@ -17,15 +17,26 @@ spec:
       labels:
         app: {{ .Chart.Name }}
     spec:
+      {{- if .nodeSelector }}
+      nodeSelector:
+      {{ toYaml .nodeSelector | indent 2 }}
+      {{ end }}
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if .Values.resources.requests }}
+        resources:
+          requests:
+          {{ toYaml .Values.resources.requests | indent 2 }}
+          limits:
+          {{ toYaml .Values.resources.limits | indent 2 }}
+        {{ end }}
         env:
           - name: AZP_TOKEN
             valueFrom:
               secretKeyRef:
-                name: azp-agent-secret
+                name: {{ .Values.azpAgentName | default "azp-agent" }}-secret
                 key: azpToken
          {{- with .Values }}
           - name: AZP_URL

@@ -40,24 +40,28 @@ az aks create -g <resource group name> -n <cluster name> --generate-ssh-keys
 ## Chart parameters
 The following table lists the configurable parameters of the `azp-agent` chart and their default values.
 
-| Parameter                         | Description                            | Default                                                   |
-| --------------------------------- | ---------------------------------------| --------------------------------------------------------- |
-| `image.repository`                | azp-agent image                        | `nil` (must be provided during installation)              |
-| `image.tag`                       | Specify image tag                      | `nil` (must be provided during installation)              |
-| `image.pullSecrets`               | Specify image pull secrets             | `nil` (does not add image pull secrets to deployed pods)  |
-| `image.pullPolicy`                | Image pull policy                      | `Always`                                                  |
-| `replicas`                        | Number of azp-agent instaces started   | `3`                                                       |
-| `resources.disk`                  | Size of the disk attached to the agent | `50Gi`                                                    |
-| `resources.storageclass`          | Specify storageclass used in kubernetes| `default`                                         |
-| `azpUrl`                          | The URL of the Azure DevOps instance   | `nil` (must be provided during installation)              |
-| `azpToken`                        | Azure DevOps personal access token     | `nil` (must be provided during installation)              |
-| `azpPool`                         | Azure Pipelines agent pool name        | `nil` (must be provided during installation)              |
-| `azpAgentName`                    | Azure Pipelines agent name             | `azp-agent`                                               |
-| `azpWorkspace`                    | Azure Pipelines agent workspace        | `/workspace`                                              |
-| `extraEnv`                        | Extra environment variables on the azp-agent container | `nil`                                     |
+| Parameter                         | Description                            | Default                                                                   |
+| --------------------------------- | ---------------------------------------| ---------------------------------------------------------                 |
+| `image.repository`                | azp-agent image                        | `nil` (must be provided during installation)                              |
+| `image.tag`                       | Specify image tag                      | `nil` (must be provided during installation)                              |
+| `image.pullSecrets`               | Specify image pull secrets             | `nil` (does not add image pull secrets to deployed pods)                  |
+| `image.pullPolicy`                | Image pull policy                      | `Always`                                                                  |
+| `replicas`                        | Number of azp-agent instaces started   | `3`                                                                       |
+| `resources.disk`                  | Size of the disk attached to the agent | `50Gi`                                                                    |
+| `resources.storageclass`          | Specify storageclass used in kubernetes| `default`                                                                 |
+| `resources.requests`              | CPU/Memory requests                    | `nil`                                                                     |
+| `resources.limits`                | CPU/Memory limits                      | `nil`                                                                     |
+| `azpUrl`                          | The URL of the Azure DevOps instance   | `nil` (must be provided during installation)                              |
+| `azpToken`                        | Azure DevOps personal access token     | `nil` (must be provided during installation)                              |
+| `azpPool`                         | Azure Pipelines agent pool name        | `nil` (must be provided during installation)                              |
+| `azpAgentName`                    | Azure Pipelines agent name             | `azp-agent`                                                               |
+| `azpWorkspace`                    | Azure Pipelines agent workspace        | `/workspace`                                                              |
+| `extraEnv`                        | Extra environment variables on the azp-agent container | `nil`                                                     |
 | `cleanRun`                        | Kill and restart azp-agent container on completion of a pipeline run (completely resets the environment)  | `true` |
-| `volumes`                         | An array of custom volumes to attach to the azp-agent pod | `nil`                                  |
-| `volumeMounts`                    | volumeMounts to the azp-agent container as referenced in `volumes` | `nil`                         |
+| `volumes`                         | An array of custom volumes to attach to the azp-agent pod | `nil`                                                  |
+| `volumeMounts`                    | volumeMounts to the azp-agent container as referenced in `volumes` | `nil`                                         |
+| `nodeSelector`                    | assign pods to nodes based on this label                                                                           |
+
 
 
 ## Installing the chart
