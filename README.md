@@ -60,7 +60,7 @@ The following table lists the configurable parameters of the `azp-agent` chart a
 | `cleanRun`                        | Kill and restart azp-agent container on completion of a pipeline run (completely resets the environment)  | `true` |
 | `volumes`                         | An array of custom volumes to attach to the azp-agent pod | `nil`                                                  |
 | `volumeMounts`                    | volumeMounts to the azp-agent container as referenced in `volumes` | `nil`                                         |
-| `nodeSelector`                    | assign pods to nodes based on this label | `nil`                                                                       |
+| `nodeSelector`                    | assign pods to nodes based on this label | `nil`                                                                   |
 
 
 
