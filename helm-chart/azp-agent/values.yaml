@@ -1,12 +1,24 @@
-replicas: 3
+replicas: 2
 
 image:
   pullPolicy: Always
+  tag: ubuntu-16.04
+  repository: toilregistry.azurecr.io/azpagent
+  imagePullSecret: test22
 
 podName: azp-agent
 
 resources:
-  disk: "50Gi"
+  disk: "10Gi"
+
+volumeMounts:
+    dockersock:
+        mountPath: /var/run/docker.sock
+
+volumes:
+    dockersock:
+      hostPath:
+            path: /var/run/docker.sock
 
 cleanRun: false
 
