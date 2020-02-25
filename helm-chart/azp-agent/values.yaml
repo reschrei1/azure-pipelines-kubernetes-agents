@@ -11,14 +11,14 @@ podName: azp-agent
 resources:
   disk: "10Gi"
 
-volumeMounts: |
-  - name: dockersock
-    mountPath: "/var/run/docker.sock"
-
-volumes: |
-  - name: dockersock
-    hostPath:
-      path: /var/run/docker.sock
+#volumeMounts: |
+#  - name: dockersock
+#    mountPath: "/var/run/docker.sock"
+#
+#volumes: |
+#  - name: dockersock
+#    hostPath:
+#      path: /var/run/docker.sock
 
 cleanRun: false
 
