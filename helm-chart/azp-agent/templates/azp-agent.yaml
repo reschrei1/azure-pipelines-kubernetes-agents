@@ -44,6 +44,8 @@ spec:
             value: {{ $value | quote }}
          {{- end }}
         volumeMounts:
+          - name: dockersock
+            mountPath: "/var/run/docker.sock"
           - name: workspace
             mountPath: {{ .Values.azpWorkspace | default "/workspace" }}
 {{- if .Values.volumeMounts }}
@@ -60,7 +62,10 @@ spec:
           periodSeconds: 5
      {{- end }}
       volumes:
-{{ toYaml .Values.volumes | indent 8 }}
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+  {{ toYaml .Values.volumes | indent 8 }}
 {{ if .Values.image.imagePullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.imagePullSecret }}
